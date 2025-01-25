@@ -20,17 +20,22 @@ import org.springframework.http.MediaType;
 import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 import static com.springboot.util.ApiDocumentUtils.getRequestPreProcessor;
 import static com.springboot.util.ApiDocumentUtils.getResponsePreProcessor;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doNothing;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
 import static org.springframework.restdocs.payload.PayloadDocumentation.*;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
+
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -96,8 +101,8 @@ public class MemberControllerDocumentationTest {
        //given
         Page<Member> pageMember = new PageImpl<>(List.of(new Member(), new Member()));
         List<MemberDto.Response> responses = List.of(
-                new MemberDto.Response(1L, "qkq@naver.com","가말아", "010-3848-4432", Member.MemberStatus.MEMBER_ACTIVE,new Stamp()),
-                new MemberDto.Response(2L, "aajrrhrk@google.com","밥말아", "010-3947-3443", Member.MemberStatus.MEMBER_SLEEP, new Stamp())
+                new MemberDto.Response(1L, "qkq@naver.com","김밥말아", "010-3848-4432", Member.MemberStatus.MEMBER_ACTIVE,new Stamp()),
+                new MemberDto.Response(2L, "aajrrhrk@google.com","참치김밥", "010-3947-3443", Member.MemberStatus.MEMBER_SLEEP, new Stamp())
         );
 
         given(memberService.findMembers(Mockito.anyInt(), Mockito.anyInt())).willReturn(pageMember);
@@ -120,13 +125,13 @@ public class MemberControllerDocumentationTest {
                         getResponsePreProcessor(),
                 responseFields(
                         List.of(
-                                fieldWithPath("data").type(JsonFieldType.OBJECT).description("데이터"),
-                                fieldWithPath("data.memberId").type(JsonFieldType.NUMBER).description("회원 식별자"),
-                                fieldWithPath("data.email").type(JsonFieldType.STRING).description("이메일"),
-                                fieldWithPath("data.name").type(JsonFieldType.STRING).description("이름"),
-                                fieldWithPath("data.phone").type(JsonFieldType.STRING).description("연락처"),
-                                fieldWithPath("data.memberStatus").type(JsonFieldType.STRING).description("회원상태 : MEMBER_ACTIVE / MEMBER_SLEEP / MEMBER_QUIT"),
-                                fieldWithPath("data.stamp").type(JsonFieldType.NUMBER).description("스탬프"),
+                                fieldWithPath("data").type(JsonFieldType.ARRAY).description("데이터"),
+                                fieldWithPath("data[].memberId").type(JsonFieldType.NUMBER).description("회원 식별자"),
+                                fieldWithPath("data[].email").type(JsonFieldType.STRING).description("이메일"),
+                                fieldWithPath("data[].name").type(JsonFieldType.STRING).description("이름"),
+                                fieldWithPath("data[].phone").type(JsonFieldType.STRING).description("연락처"),
+                                fieldWithPath("data[].memberStatus").type(JsonFieldType.STRING).description("회원상태 : MEMBER_ACTIVE / MEMBER_SLEEP / MEMBER_QUIT"),
+                                fieldWithPath("data[].stamp").type(JsonFieldType.NUMBER).description("스탬프"),
                                 fieldWithPath("pageInfo").type(JsonFieldType.OBJECT).description("페이지인포"),
                                 fieldWithPath("pageInfo.page").type(JsonFieldType.NUMBER).description("페이지"),
                                 fieldWithPath("pageInfo.size").type(JsonFieldType.NUMBER).description("사이즈"),
@@ -143,5 +148,28 @@ public class MemberControllerDocumentationTest {
     @Test
     public void deleteMemberTest() throws Exception {
         // TODO 여기에 MemberController의 deleteMember() 핸들러 메서드 API 스펙 정보를 포함하는 테스트 케이스를 작성 하세요.
+        //given
+        long memberId = 1L;
+
+        doNothing().when(memberService).deleteMember(memberId);
+
+        //when
+        ResultActions actions = mockMvc.perform(
+                delete("/v11/members/{member-id}", memberId)
+                        .accept(MediaType.APPLICATION_JSON)
+        );
+
+        //then
+        actions.andExpect(status().isNoContent())
+                .andDo(document(
+                        "delete-member",
+                        getRequestPreProcessor(),
+                        getResponsePreProcessor(),
+                        pathParameters(
+                               parameterWithName("member-id").description("회원 식별자")
+                        )
+
+                ));
+
     }
 }
